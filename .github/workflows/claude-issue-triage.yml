@@ -66,7 +66,11 @@ jobs:
 
             5. Publica un comentario con
                `gh issue comment ${{ github.event.issue.number }} --body "..."`
-               siguiendo exactamente esta plantilla:
+               El cuerpo del comentario debe estar escrito en Markdown que GitHub pueda
+               renderizar (GitHub Flavored Markdown): `**negrita**` para el titular de cada
+               sección, listas con `-`, bloques de código con triple backtick indicando el
+               lenguaje, y `código en línea` para identificadores, funciones y rutas de
+               archivo. No uses HTML crudo. Sigue exactamente esta plantilla:
 
                **Resumen** — 1-2 frases sobre qué pide el issue.
                **Tipo y labels aplicados** — cuáles has puesto y por qué.
