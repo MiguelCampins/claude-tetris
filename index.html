@@ -57,7 +57,18 @@
       <div class="overlay-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+        <!-- Records: shown on the start screen and on game over, hidden on pause -->
+        <div id="records-panel">
+          <span class="label">RECORDS</span>
+          <div id="records-table"></div>
+          <p id="records-stats"></p>
+          <div id="name-form" class="hidden">
+            <input type="text" id="name-input" maxlength="12" placeholder="Tu nombre" autocomplete="off" />
+            <button id="save-name-btn">Guardar</button>
+          </div>
+        </div>
         <button id="restart-btn">Reiniciar</button>
+        <button id="reset-records-btn" class="btn-secondary">Resetear records</button>
       </div>
     </div>
   </div>
