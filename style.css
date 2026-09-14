@@ -255,3 +255,115 @@ kbd {
 #restart-btn:hover {
   background: var(--color-btn-hover);
 }
+
+/* ---- Records (start screen / game over) ---- */
+/* Only visible while the overlay carries .show-records (never on pause). */
+#records-panel,
+#reset-records-btn {
+  display: none;
+}
+
+.overlay.show-records #records-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 270px;
+}
+
+.overlay.show-records #reset-records-btn {
+  display: inline-block;
+}
+
+#records-table {
+  width: 100%;
+}
+
+#records-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  color: var(--color-text);
+}
+
+#records-table th {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--color-label);
+  font-weight: 600;
+  padding: 2px 4px;
+  text-align: left;
+}
+
+#records-table td {
+  padding: 3px 4px;
+  border-top: 1px solid var(--color-board-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+#records-table td:nth-child(3) {
+  color: var(--color-value);
+  font-weight: 700;
+}
+
+#records-table tr.record-current td {
+  background: var(--color-kbd-bg);
+  color: var(--color-value);
+  font-weight: 700;
+}
+
+.records-empty,
+#records-stats {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  color: var(--color-controls-text);
+}
+
+#name-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+#name-form.hidden {
+  display: none;
+}
+
+#name-input {
+  width: 140px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-kbd-bg);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 6px;
+  outline: none;
+  user-select: text;
+}
+
+#name-input:focus {
+  border-color: var(--color-value);
+}
+
+#save-name-btn,
+.btn-secondary {
+  background: var(--color-kbd-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+#save-name-btn:hover,
+.btn-secondary:hover {
+  border-color: var(--color-value);
+}
