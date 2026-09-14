@@ -255,3 +255,105 @@ kbd {
 #restart-btn:hover {
   background: var(--color-btn-hover);
 }
+
+/* ---- Menú de pausa ---- */
+.pause-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 200px;
+}
+
+.pause-menu.hidden {
+  display: none;
+}
+
+.menu-btn {
+  background: var(--color-btn-bg);
+  color: var(--color-btn-text);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+.menu-btn:hover,
+.menu-btn:focus-visible {
+  background: var(--color-btn-hover);
+  outline: none;
+}
+
+.menu-btn.secondary {
+  background: var(--color-kbd-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-kbd-border);
+}
+
+.menu-btn.secondary:hover,
+.menu-btn.secondary:focus-visible {
+  background: var(--color-kbd-border);
+}
+
+.pause-controls {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 6px;
+  background: var(--color-board-bg);
+  text-align: left;
+}
+
+.pause-controls.hidden {
+  display: none;
+}
+
+.pause-controls li {
+  font-size: 12px;
+  color: var(--color-controls-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.start-level {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--color-controls-text);
+  font-weight: 600;
+}
+
+.start-level select {
+  background: var(--color-kbd-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.start-level select:focus-visible {
+  outline: 2px solid var(--color-btn-bg);
+  outline-offset: 1px;
+}
+
+.start-level-hint {
+  font-size: 10px;
+  color: var(--color-label);
+  letter-spacing: 0.5px;
+}
