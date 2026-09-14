@@ -50,6 +50,13 @@ const themeToggle = document.getElementById('theme-toggle');
 const THEME_KEY = 'tetris-theme';
 const GRID_LINE_COLORS = { dark: '#22222e', light: '#e2e4ee' };
 let gridLineColor = GRID_LINE_COLORS.dark;
+let currentTheme = 'dark';
+
+// ---- Skins: state (see the "Skins" section below for SKINS / applySkin) ----
+const SKIN_KEY = 'tetris-skin';
+const DEFAULT_SKIN = 'retro';
+const skinSelect = document.getElementById('skin-select');
+let currentSkinName = DEFAULT_SKIN; // persisted, NOT reset by init()
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, bombPending, nextBombAt;
 
@@ -199,22 +206,12 @@ function updateHUD() {
   levelEl.textContent = level;
 }
 
+// Single drawing entry point: delegates to the active skin. Ghost (alpha 0.2)
+// and the NEXT preview go through here too.
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  if (colorIndex === BOMB) {
-    context.beginPath();
-    context.arc(x * size + size / 2, y * size + size / 2, size / 2 - 3, 0, Math.PI * 2);
-    context.fill();
-    context.globalAlpha = 1;
-    return;
-  }
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  SKINS[currentSkinName].drawBlock(context, x, y, colorIndex, size);
   context.globalAlpha = 1;
 }
 
@@ -353,10 +350,178 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+// =============================== Skins ======================================
+// A skin owns everything drawn on the canvases: block colours, board/NEXT
+// background, grid line colour and the block drawing routine. The light/dark
+// theme toggle keeps controlling the rest of the page. `boardBg` and
+// `gridLine` are either a fixed string or `{ dark, light }` resolved against
+// `currentTheme` in applySkin(). Index 1-8 of `colors` stays the only source
+// of colour; BOMB (8) is always drawn as a circle.
+
+// Multiplies the RGB channels of a '#rrggbb' colour by `factor` (clamped).
+function shadeColor(hex, factor) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = shift => Math.max(0, Math.min(255, Math.round(((n >> shift) & 255) * factor)));
+  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}
+
+// Traces a rounded rectangle path, with a fallback for browsers without roundRect.
+function roundRectPath(context, x, y, w, h, r) {
+  context.beginPath();
+  if (typeof context.roundRect === 'function') {
+    context.roundRect(x, y, w, h, r);
+    return;
+  }
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
+function drawBombCircle(context, x, y, size, inset) {
+  context.beginPath();
+  context.arc(x * size + size / 2, y * size + size / 2, size / 2 - inset, 0, Math.PI * 2);
+  context.fill();
+}
+
+const NEON_COLORS = [null, '#00f5ff', '#ffee00', '#ff2bff', '#39ff14', '#ff073a', '#2b6bff', '#ff8c00', '#ffffff'];
+const PASTEL_COLORS = [null, '#a5e3e8', '#fff1a8', '#d9b8e6', '#bfe6c0', '#f4b6b6', '#a9c4f5', '#fcd2a3', '#f7f7f7'];
+const PIXEL_COLORS = [null, '#3fb8c9', '#e6c229', '#9c5bb0', '#5aa864', '#c94a4a', '#3557c7', '#e08a2e', '#eeeeee'];
+
+const SKINS = {
+  retro: {
+    label: 'Retro',
+    colors: COLORS,
+    boardBg: { dark: '#1a1a25', light: '#ffffff' },
+    gridLine: GRID_LINE_COLORS,
+    drawBlock(context, x, y, colorIndex, size) {
+      context.fillStyle = this.colors[colorIndex];
+      if (colorIndex === BOMB) { drawBombCircle(context, x, y, size, 3); return; }
+      context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+      // highlight
+      context.fillStyle = 'rgba(255,255,255,0.12)';
+      context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+    },
+  },
+  neon: {
+    label: 'Neon',
+    colors: NEON_COLORS,
+    boardBg: '#000000',   // always black, even in the light theme
+    gridLine: '#141414',
+    drawBlock(context, x, y, colorIndex, size) {
+      const color = this.colors[colorIndex];
+      context.shadowBlur = 10;
+      context.shadowColor = color;
+      context.strokeStyle = color;
+      context.lineWidth = 2;
+      if (colorIndex === BOMB) {
+        context.fillStyle = color;
+        drawBombCircle(context, x, y, size, 4);
+        context.stroke();
+      } else {
+        context.fillStyle = shadeColor(color, 0.25);
+        context.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
+        context.strokeRect(x * size + 2, y * size + 2, size - 4, size - 4);
+      }
+      // reset so the glow does not leak into the grid or other blocks
+      context.shadowBlur = 0;
+      context.shadowColor = 'transparent';
+    },
+  },
+  pastel: {
+    label: 'Pastel',
+    colors: PASTEL_COLORS,
+    boardBg: { dark: '#3a3546', light: '#fdf7f2' },
+    gridLine: { dark: '#48425a', light: '#efe6df' },
+    drawBlock(context, x, y, colorIndex, size) {
+      const color = this.colors[colorIndex];
+      context.fillStyle = color;
+      if (colorIndex === BOMB) { drawBombCircle(context, x, y, size, 3); return; }
+      roundRectPath(context, x * size + 1.5, y * size + 1.5, size - 3, size - 3, 6);
+      context.fill();
+      context.strokeStyle = shadeColor(color, 0.85);
+      context.lineWidth = 1;
+      context.stroke();
+    },
+  },
+  pixel: {
+    label: 'Pixel art',
+    colors: PIXEL_COLORS,
+    boardBg: { dark: '#101820', light: '#dfe6d0' },
+    gridLine: { dark: '#1c2530', light: '#cbd3bd' },
+    drawBlock(context, x, y, colorIndex, size) {
+      const color = this.colors[colorIndex];
+      const px = x * size, py = y * size;
+      const light = shadeColor(color, 1.35), dark = shadeColor(color, 0.55);
+      if (colorIndex === BOMB) {
+        // blocky circle: a plus-shaped stack of rects
+        context.fillStyle = dark;
+        context.fillRect(px + 8, py + 4, size - 16, size - 8);
+        context.fillRect(px + 4, py + 8, size - 8, size - 16);
+        context.fillStyle = color;
+        context.fillRect(px + 8, py + 6, size - 16, size - 12);
+        context.fillRect(px + 6, py + 8, size - 12, size - 16);
+        context.fillStyle = light;
+        context.fillRect(px + 10, py + 8, 4, 4);
+        return;
+      }
+      context.fillStyle = color;
+      context.fillRect(px, py, size, size);
+      // light top/left edge, dark bottom/right edge (2px)
+      context.fillStyle = light;
+      context.fillRect(px, py, size, 2);
+      context.fillRect(px, py, 2, size);
+      context.fillStyle = dark;
+      context.fillRect(px, py + size - 2, size, 2);
+      context.fillRect(px + size - 2, py, 2, size);
+      // texture dots
+      context.fillStyle = light;
+      context.fillRect(px + 6, py + 6, 4, 4);
+      context.fillStyle = dark;
+      context.fillRect(px + size - 10, py + size - 10, 4, 4);
+      context.fillRect(px + 14, py + 14, 2, 2);
+    },
+  },
+};
+
+function resolveSkinColor(value) {
+  return typeof value === 'string' ? value : value[currentTheme];
+}
+
+// Analogous to applyTheme: sets the canvas backgrounds and grid colour from
+// the skin (resolving dark/light against currentTheme), syncs the selector
+// and optionally redraws board + NEXT without reloading.
+function applySkin(name, redraw) {
+  if (!Object.hasOwn(SKINS, name)) name = DEFAULT_SKIN;
+  currentSkinName = name;
+  const skin = SKINS[name];
+  const bg = resolveSkinColor(skin.boardBg);
+  canvas.style.background = bg;
+  nextCanvas.style.background = bg;
+  gridLineColor = resolveSkinColor(skin.gridLine);
+  skinSelect.value = name;
+  if (redraw) {
+    draw();
+    drawNext();
+  }
+}
+
+skinSelect.addEventListener('change', () => {
+  localStorage.setItem(SKIN_KEY, skinSelect.value);
+  applySkin(skinSelect.value, true);
+  skinSelect.blur(); // give the keyboard back to the game
+});
+// While the selector has focus, arrows/space belong to it, not to the game.
+skinSelect.addEventListener('keydown', e => e.stopPropagation());
+// ============================= end Skins ====================================
+
 function applyTheme(theme, redraw) {
+  currentTheme = theme;
   document.body.classList.toggle('light', theme === 'light');
   themeToggle.checked = theme === 'light';
-  gridLineColor = GRID_LINE_COLORS[theme];
+  applySkin(currentSkinName, false); // skin resolves board bg / grid for the theme
   if (redraw) draw();
 }
 
@@ -366,6 +531,7 @@ themeToggle.addEventListener('change', () => {
   applyTheme(theme, true);
 });
 
+applySkin(localStorage.getItem(SKIN_KEY) || DEFAULT_SKIN, false);
 applyTheme(localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark', false);
 
 init();

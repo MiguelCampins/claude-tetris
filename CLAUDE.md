@@ -25,6 +25,13 @@ Key invariants:
 - `lockPiece()` = `merge()` → `clearLines()` → `spawn()`. Game over is detected in `spawn()` when the new piece already collides.
 - `clearLines` splices in place and does `r++` after a clear so the re-checked row isn't skipped.
 
+Skins:
+
+- `SKINS = { retro, neon, pastel, pixel }` (contiguous "Skins" block in `game.js`, before `applyTheme`). Each skin is `{ label, colors: [null, ...8], boardBg, gridLine, drawBlock(context, x, y, colorIndex, size) }`. `boardBg`/`gridLine` are either a fixed string or `{ dark, light }`, resolved against `currentTheme` by `applySkin`. Neon uses a fixed `#000000` board/NEXT background even in the light theme; Retro reuses `COLORS` and `GRID_LINE_COLORS`.
+- The global `drawBlock` is the **only** drawing entry point: it sets `globalAlpha`, delegates to `SKINS[currentSkinName].drawBlock` and resets alpha. Board, ghost (alpha 0.2) and NEXT preview all go through it, so a skin never needs to know about them. Index `1–8` of `colors` remains the single source of colour; `BOMB` (8) is always drawn as a circle. Skins that touch `shadowBlur`/`shadowColor` (Neon) must reset them before returning.
+- `applySkin(name, redraw)` mirrors `applyTheme`: sets `canvas.style.background` and `nextCanvas.style.background`, `gridLineColor`, syncs `#skin-select`, and redraws board + NEXT when `redraw` is true. Unknown names fall back to `DEFAULT_SKIN` (`'retro'`). Persisted in `localStorage` under `SKIN_KEY = 'tetris-skin'`; `currentSkinName` is module state that is **not** reset by `init()`.
+- `applyTheme` stores `currentTheme` and calls `applySkin(currentSkinName, false)` so a theme change re-resolves the skin's `dark`/`light` values. `gridLineColor` is therefore owned by the skin, not by `GRID_LINE_COLORS` directly. Load order at startup: `applySkin(saved)` → `applyTheme(saved)` → `init()`.
+
 Canvas size is hardcoded in `index.html` (`300×600`, `120×120`). Changing `COLS`/`ROWS`/`BLOCK` in `game.js` requires updating those attributes to `COLS*BLOCK × ROWS*BLOCK`.
 
 ## Language
