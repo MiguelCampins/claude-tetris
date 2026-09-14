@@ -42,6 +42,7 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 - **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
 - **Pausa** y **Game Over** con opción de reinicio.
+- **Pieza Bomba**: cada 10 líneas completadas aparece una bomba (círculo blanco de 1 celda) en la vista previa. Cae, se mueve y rota como cualquier pieza; al fijarse destruye el área **3 × 3** centrada en ella y las celdas superiores de esas columnas caen para rellenar el hueco. Cada bloque destruido suma `10 × nivel` puntos.
 
 ---
 
@@ -175,6 +176,8 @@ Algunos parámetros fáciles de tunear en `game.js`:
 | `BLOCK`        | Tamaño en píxeles de cada celda          | `30`                  |
 | `COLORS`       | Paleta de colores por tipo de pieza      | 7 colores             |
 | `LINE_SCORES`  | Puntos por 1, 2, 3 o 4 líneas eliminadas | `[0,100,300,500,800]` |
+| `BOMB_EVERY`   | Líneas necesarias para que aparezca una Bomba | `10`             |
+| `BOMB_CELL_SCORE` | Puntos por bloque destruido por la Bomba (× nivel) | `10`      |
 | `dropInterval` | Velocidad inicial de caída en ms         | `1000`                |
 
 > Si cambias `COLS`, `ROWS` o `BLOCK`, recuerda ajustar también `width` y `height` del `<canvas id="board">` en `index.html` para que coincida (`COLS × BLOCK` × `ROWS × BLOCK`).

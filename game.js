@@ -13,6 +13,7 @@ const COLORS = [
   '#e57373', // Z - red
   '#2979ff', // J - blue
   '#ffb74d', // L - orange
+  '#f5f5f5', // Bomb - white
 ];
 
 const PIECES = [
@@ -24,7 +25,12 @@ const PIECES = [
   [[5,5,0],[0,5,5],[0,0,0]],                  // Z
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
+  [[8]],                                       // Bomb (1x1)
 ];
+
+const BOMB = 8;           // piece type of the bomb
+const BOMB_EVERY = 10;    // a bomb spawns every N cleared lines
+const BOMB_CELL_SCORE = 10;
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -45,7 +51,7 @@ const THEME_KEY = 'tetris-theme';
 const GRID_LINE_COLORS = { dark: '#22222e', light: '#e2e4ee' };
 let gridLineColor = GRID_LINE_COLORS.dark;
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId, bombPending, nextBombAt;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -55,6 +61,10 @@ function randomPiece() {
   const type = Math.floor(Math.random() * 7) + 1;
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function bombPiece() {
+  return { type: BOMB, shape: [[BOMB]], x: Math.floor(COLS / 2), y: 0 };
 }
 
 function collide(shape, ox, oy) {
@@ -110,6 +120,10 @@ function clearLines() {
   }
   if (cleared) {
     lines += cleared;
+    if (lines >= nextBombAt) {
+      bombPending = true;
+      nextBombAt += BOMB_EVERY;
+    }
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
@@ -140,15 +154,39 @@ function softDrop() {
   }
 }
 
+// Clears the 3x3 area centred on (cx, cy), then drops the cells above the
+// area down by its height so the hole is filled. Rows below are untouched.
+function explode(cx, cy) {
+  const r0 = Math.max(0, cy - 1), r1 = Math.min(ROWS - 1, cy + 1);
+  const c0 = Math.max(0, cx - 1), c1 = Math.min(COLS - 1, cx + 1);
+  const h = r1 - r0 + 1;
+  let destroyed = 0;
+  for (let r = r0; r <= r1; r++)
+    for (let c = c0; c <= c1; c++) {
+      if (board[r][c]) destroyed++;
+      board[r][c] = 0;
+    }
+  for (let c = c0; c <= c1; c++)
+    for (let r = r1; r >= 0; r--)
+      board[r][c] = r - h >= 0 ? board[r - h][c] : 0;
+  score += destroyed * BOMB_CELL_SCORE * level;
+  updateHUD();
+}
+
 function lockPiece() {
-  merge();
+  if (current.type === BOMB) {
+    explode(current.x, current.y);
+  } else {
+    merge();
+  }
   clearLines();
   spawn();
 }
 
 function spawn() {
   current = next;
-  next = randomPiece();
+  next = bombPending ? bombPiece() : randomPiece();
+  bombPending = false;
   if (collide(current.shape, current.x, current.y)) {
     endGame();
   }
@@ -166,6 +204,13 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
   const color = COLORS[colorIndex];
   context.globalAlpha = alpha ?? 1;
   context.fillStyle = color;
+  if (colorIndex === BOMB) {
+    context.beginPath();
+    context.arc(x * size + size / 2, y * size + size / 2, size / 2 - 3, 0, Math.PI * 2);
+    context.fill();
+    context.globalAlpha = 1;
+    return;
+  }
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
   // highlight
   context.fillStyle = 'rgba(255,255,255,0.12)';
@@ -270,6 +315,8 @@ function init() {
   gameOver = false;
   dropInterval = 1000;
   dropAccum = 0;
+  bombPending = false;
+  nextBombAt = BOMB_EVERY;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
